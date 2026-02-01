@@ -123,6 +123,51 @@ struct SidebarView: View {
                             .foregroundStyle(Color.brandAmber)
                     }
                 }
+                
+                // Global Install Queue section
+                if !portsManager.installQueue.isEmpty {
+                    Section("Install Queue") {
+                        ForEach(portsManager.installQueue) { port in
+                            HStack {
+                                Text(port.name)
+                                    .font(.caption)
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Button {
+                                    portsManager.removeFromInstallQueue([port])
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.textTertiary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        
+                        HStack(spacing: 8) {
+                            Button("Clear") {
+                                portsManager.clearInstallQueue()
+                            }
+                            .buttonStyle(.plain)
+                            .font(.caption)
+                            .foregroundStyle(Color.textTertiary)
+                            
+                            Spacer()
+                            
+                            Button {
+                                Task {
+                                    await portsManager.installQueuedPorts()
+                                }
+                            } label: {
+                                Label("Install \(portsManager.installQueue.count)", systemImage: "arrow.down.circle.fill")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.themePrimary)
+                            .disabled(portsManager.state.isLoading)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
             }
         }
         .listStyle(.sidebar)

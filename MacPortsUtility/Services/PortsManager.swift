@@ -4,13 +4,19 @@ import SwiftUI
 /// Manages all MacPorts operations
 @MainActor
 class PortsManager: ObservableObject {
-    @Published var searchResults: [Port] = []
+    // MARK: - Shared State (across all windows)
     @Published var installedPorts: [Port] = []
     @Published var outdatedPorts: [Port] = []
     @Published var state: PortOperationState = .idle
     @Published var consoleOutput: String = ""
     @Published var isMacPortsInstalled: Bool
     @Published var macPortsVersion: String = ""
+    
+    /// Global install queue - ports marked for installation from any window
+    @Published var installQueue: [Port] = []
+    
+    // MARK: - Legacy (deprecated, for backwards compatibility)
+    @Published var searchResults: [Port] = []
     
     private let portCommand = "/opt/local/bin/port"
     
@@ -42,24 +48,54 @@ class PortsManager: ObservableObject {
         macPortsVersion = output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
+    // MARK: - Install Queue Management
+    
+    /// Add ports to the global install queue
+    func addToInstallQueue(_ ports: [Port]) {
+        for port in ports {
+            if !installQueue.contains(where: { $0.id == port.id }) && !port.isInstalled {
+                installQueue.append(port)
+            }
+        }
+        appendToConsole("Added \(ports.count) port(s) to install queue. Total: \(installQueue.count)")
+    }
+    
+    /// Remove ports from the install queue
+    func removeFromInstallQueue(_ ports: [Port]) {
+        let idsToRemove = Set(ports.map { $0.id })
+        installQueue.removeAll { idsToRemove.contains($0.id) }
+    }
+    
+    /// Clear the entire install queue
+    func clearInstallQueue() {
+        installQueue.removeAll()
+    }
+    
+    /// Install all ports in the queue
+    func installQueuedPorts() async {
+        guard !installQueue.isEmpty else { return }
+        let portsToInstall = installQueue
+        await installPorts(portsToInstall)
+        installQueue.removeAll()
+    }
+    
     // MARK: - Search
     
-    func searchPorts(query: String) async {
+    /// Search ports and return results (for per-window state)
+    /// This does NOT modify the shared searchResults property
+    func searchPortsReturningResults(query: String) async -> [Port] {
         guard !query.isEmpty else {
-            searchResults = []
-            return
+            return []
         }
         
-        state = .searching
         appendToConsole("Searching for '\(query)'...")
         
         // Search for ports matching the query
         let (output, error) = await runCommand([portCommand, "search", "--name", "--glob", "*\(query)*"])
         
         if !error.isEmpty && !error.contains("Warning") {
-            state = .error(message: error)
             appendToConsole("Error: \(error)")
-            return
+            return []
         }
         
         var ports: [Port] = []
@@ -79,9 +115,20 @@ class PortsManager: ObservableObject {
             return p
         }
         
-        searchResults = ports
-        state = .idle
         appendToConsole("Found \(ports.count) ports matching '\(query)'")
+        return ports
+    }
+    
+    /// Legacy search method - updates shared state (deprecated for multi-window use)
+    func searchPorts(query: String) async {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+        
+        state = .searching
+        searchResults = await searchPortsReturningResults(query: query)
+        state = .idle
     }
     
     private func parseSearchResult(_ line: String) -> Port? {

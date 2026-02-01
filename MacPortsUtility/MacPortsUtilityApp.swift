@@ -26,6 +26,7 @@ enum AppearanceMode: String, CaseIterable {
 struct MacPortsUtilityApp: App {
     @StateObject private var portsManager = PortsManager()
     @State private var showingInstallMacPorts = false
+    @State private var showingAbout = false
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     
     var body: some Scene {
@@ -34,10 +35,20 @@ struct MacPortsUtilityApp: App {
                 .environmentObject(portsManager)
                 .frame(minWidth: 900, minHeight: 600)
                 .preferredColorScheme(appearanceMode.colorScheme)
+                .sheet(isPresented: $showingAbout) {
+                    AboutView()
+                }
         }
         .windowStyle(.automatic)
         .windowToolbarStyle(.unified)
         .commands {
+            // Replace default About menu item
+            CommandGroup(replacing: .appInfo) {
+                Button("About MacPorts Utility") {
+                    showingAbout = true
+                }
+            }
+            
             // Remove Show Tab Bar from View menu
             CommandGroup(replacing: .toolbar) { }
             
@@ -74,6 +85,12 @@ struct MacPortsUtilityApp: App {
                 }
                 Button("MacPorts Website") {
                     if let url = URL(string: "https://www.macports.org/") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                Divider()
+                Button("GitHub Repository") {
+                    if let url = URL(string: "https://github.com/Zittersplitter/MacPortsUtility") {
                         NSWorkspace.shared.open(url)
                     }
                 }
