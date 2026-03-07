@@ -262,7 +262,7 @@ class PortsManager: ObservableObject {
         appendToConsole("Installing \(portNames.count) port(s): \(portNames.joined(separator: ", "))...")
         
         // Build a single command that installs all ports
-        let commands = portNames.map { "/opt/local/bin/port install \($0)" }.joined(separator: " && ")
+        let commands = portNames.map { "\(portCommand) install \($0)" }.joined(separator: " && ")
         let script = """
         do shell script "\(commands)" with administrator privileges
         """
@@ -293,7 +293,7 @@ class PortsManager: ObservableObject {
         state = .uninstalling(portName: portNames.joined(separator: ", "))
         appendToConsole("Uninstalling \(portNames.count) port(s): \(portNames.joined(separator: ", "))...")
         
-        let commands = portNames.map { "/opt/local/bin/port uninstall \($0)" }.joined(separator: " && ")
+        let commands = portNames.map { "\(portCommand) uninstall \($0)" }.joined(separator: " && ")
         let script = """
         do shell script "\(commands)" with administrator privileges
         """
@@ -324,7 +324,7 @@ class PortsManager: ObservableObject {
         state = .updating(portName: portNames.joined(separator: ", "))
         appendToConsole("Updating \(portNames.count) port(s): \(portNames.joined(separator: ", "))...")
         
-        let commands = portNames.map { "/opt/local/bin/port upgrade \($0)" }.joined(separator: " && ")
+        let commands = portNames.map { "\(portCommand) upgrade \($0)" }.joined(separator: " && ")
         let script = """
         do shell script "\(commands)" with administrator privileges
         """
@@ -352,7 +352,7 @@ class PortsManager: ObservableObject {
         appendToConsole("Updating all outdated ports...")
         
         let script = """
-        do shell script "/opt/local/bin/port upgrade outdated" with administrator privileges
+        do shell script "\(portCommand) upgrade outdated" with administrator privileges
         """
         
         let (output, error) = await runAppleScript(script)
@@ -376,7 +376,7 @@ class PortsManager: ObservableObject {
         appendToConsole("Syncing port tree...")
         
         let script = """
-        do shell script "/opt/local/bin/port selfupdate" with administrator privileges
+        do shell script "\(portCommand) selfupdate" with administrator privileges
         """
         
         let (output, error) = await runAppleScript(script)
