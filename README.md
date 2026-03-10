@@ -137,8 +137,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgments
 
-- [MacPorts Project](https://www.macports.org/) for the incredible package management system
-- Apple's SwiftUI framework for enabling beautiful native interfaces
+- [MacPorts Project](https://www.macports.org/) for the incredible package management system i use for more than 15 years now!
+
 
 ## Disclaimer
 
