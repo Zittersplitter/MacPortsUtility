@@ -123,7 +123,7 @@ Toggle between Light, Dark, and System appearance modes via the sidebar footer o
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## Contributing
 
