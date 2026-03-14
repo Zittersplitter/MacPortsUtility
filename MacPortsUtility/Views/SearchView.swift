@@ -11,7 +11,7 @@ struct SearchView: View {
                 // Left: Search results list
                 VStack(spacing: 0) {
                     // Search bar
-                    SearchBarView(searchText: $searchState.searchText) {
+                    SearchBarView(searchText: $searchState.searchText, selectedCategory: $searchState.selectedCategory) {
                         performSearch()
                     }
                     
@@ -28,11 +28,17 @@ struct SearchView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.surfacePrimary)
-                    } else if searchState.searchResults.isEmpty && !searchState.searchText.isEmpty {
+                    } else if searchState.searchResults.isEmpty && (!searchState.searchText.isEmpty || searchState.selectedCategory != .all) {
                         ContentUnavailableView {
                             Label("No Results", systemImage: "magnifyingglass")
                         } description: {
-                            Text("No ports found matching '\(searchState.searchText)'")
+                            if searchState.selectedCategory != .all && !searchState.searchText.isEmpty {
+                                Text("No ports starting with '\(searchState.searchText)' in \(searchState.selectedCategory.displayName)")
+                            } else if searchState.selectedCategory != .all {
+                                Text("No ports found in \(searchState.selectedCategory.displayName)")
+                            } else {
+                                Text("No ports found matching '\(searchState.searchText)'")
+                            }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.surfacePrimary)
@@ -40,7 +46,7 @@ struct SearchView: View {
                         ContentUnavailableView {
                             Label("Search Ports", systemImage: "magnifyingglass")
                         } description: {
-                            Text("Enter a search term to find available ports")
+                            Text("Select a category or enter a search term")
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.surfacePrimary)
@@ -54,6 +60,7 @@ struct SearchView: View {
                                     onToggle: { togglePortInQueue(port) }
                                 )
                                 .tag(port)
+                                .draggable(port.name)
                             }
                         }
                         .listStyle(.inset(alternatesRowBackgrounds: true))
@@ -102,6 +109,16 @@ struct SearchView: View {
             // Connect the search state to the ports manager
             searchState.setPortsManager(portsManager)
         }
+        .onChange(of: searchState.selectedCategory) { _, _ in
+            Task {
+                await searchState.onCategoryChanged()
+            }
+        }
+        .onChange(of: searchState.searchText) { _, _ in
+            Task {
+                await searchState.onSearchTextChanged()
+            }
+        }
     }
     
     private func performSearch() {
@@ -131,6 +148,7 @@ struct SearchView: View {
 
 struct SearchBarView: View {
     @Binding var searchText: String
+    @Binding var selectedCategory: PortCategory
     var onSearch: () -> Void
     
     var body: some View {
@@ -157,6 +175,24 @@ struct SearchBarView: View {
                 }
             }
             .padding(10)
+            .background(Color.surfaceElevated)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.surfaceSecondary, lineWidth: 1)
+            )
+            
+            Picker(selection: $selectedCategory) {
+                ForEach(PortCategory.allCases) { category in
+                    Label(category.displayName, systemImage: category.icon)
+                        .tag(category)
+                }
+            } label: {
+                EmptyView()
+            }
+            .pickerStyle(.menu)
+            .frame(width: 170)
+            .padding(6)
             .background(Color.surfaceElevated)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
@@ -273,6 +309,7 @@ struct GlobalInstallQueueBar: View {
                 .buttonStyle(.plain)
                 .font(.subheadline)
                 .foregroundStyle(Color.textTertiary)
+                .accessibilityLabel("Clear install queue")
                 
                 Button {
                     onInstall()
@@ -280,6 +317,7 @@ struct GlobalInstallQueueBar: View {
                     Label("Install \(ports.count)", systemImage: "arrow.down.circle.fill")
                 }
                 .buttonStyle(.themePrimary)
+                .accessibilityLabel("Install \(ports.count) queued port\(ports.count == 1 ? "" : "s")")
             }
             .padding(16)
             .background(LinearGradient.toolbarGradient)

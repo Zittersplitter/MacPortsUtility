@@ -111,6 +111,12 @@ struct MacPortsUtilityApp: App {
                     }
                 }
                 .keyboardShortcut("S", modifiers: [.command, .shift])
+                
+                Divider()
+                Button("Clear Console") {
+                    portsManager.clearConsole()
+                }
+                .keyboardShortcut("K", modifiers: .command)
             }
         }
     }

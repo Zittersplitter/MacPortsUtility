@@ -33,6 +33,7 @@ struct UpdatesView: View {
                         }
                         .buttonStyle(.themeSecondary)
                         .disabled(portsManager.state.isLoading)
+                        .accessibilityLabel("Check for updates")
                         
                         if !portsManager.outdatedPorts.isEmpty {
                             Button {
@@ -44,6 +45,7 @@ struct UpdatesView: View {
                             }
                             .buttonStyle(.themeAccent)
                             .disabled(portsManager.state.isLoading)
+                            .accessibilityLabel("Update all \(portsManager.outdatedPorts.count) outdated ports")
                         }
                     }
                     .padding(16)

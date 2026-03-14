@@ -47,6 +47,7 @@ struct ContentView: View {
                         Label("Install MacPorts", systemImage: "arrow.down.circle")
                     }
                     .tint(.orange)
+                    .accessibilityLabel("Download and install MacPorts")
                 }
                 
                 Button {
@@ -57,12 +58,24 @@ struct ContentView: View {
                     Label("Sync", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .disabled(portsManager.state.isLoading || !portsManager.isMacPortsInstalled)
+                .accessibilityLabel("Sync port tree")
+                .accessibilityHint("Updates the MacPorts port list")
             }
         }
         .overlay {
             if !portsManager.isMacPortsInstalled {
                 MacPortsNotInstalledView()
             }
+        }
+        .alert("Error", isPresented: Binding(
+            get: { portsManager.lastError != nil },
+            set: { if !$0 { portsManager.lastError = nil } }
+        )) {
+            Button("OK", role: .cancel) {
+                portsManager.lastError = nil
+            }
+        } message: {
+            Text(portsManager.lastError ?? "")
         }
     }
 }
@@ -141,7 +154,12 @@ struct SidebarView: View {
                                         .foregroundStyle(Color.textTertiary)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Remove \(port.name) from queue")
                             }
+                            .draggable(port.name)
+                        }
+                        .onMove { source, destination in
+                            portsManager.installQueue.move(fromOffsets: source, toOffset: destination)
                         }
                         
                         HStack(spacing: 8) {
@@ -151,6 +169,7 @@ struct SidebarView: View {
                             .buttonStyle(.plain)
                             .font(.caption)
                             .foregroundStyle(Color.textTertiary)
+                            .accessibilityLabel("Clear install queue")
                             
                             Spacer()
                             
@@ -164,6 +183,7 @@ struct SidebarView: View {
                             }
                             .buttonStyle(.themePrimary)
                             .disabled(portsManager.state.isLoading)
+                            .accessibilityLabel("Install \(portsManager.installQueue.count) queued ports")
                         }
                         .padding(.top, 4)
                     }
@@ -208,11 +228,13 @@ struct StatusBarView: View {
                     ProgressView()
                         .scaleEffect(0.6)
                         .frame(width: 14, height: 14)
+                        .accessibilityLabel("Operation in progress")
                 } else {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 10, height: 10)
                         .shadow(color: statusColor.opacity(0.5), radius: 3)
+                        .accessibilityLabel(portsManager.state == .idle ? "Ready" : "Error")
                 }
                 
                 Text(portsManager.state.statusMessage)
@@ -235,6 +257,8 @@ struct StatusBarView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textSecondary)
+            .accessibilityLabel(showingConsole ? "Hide Console" : "Show Console")
+            .accessibilityHint("Toggles the console output panel")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -280,6 +304,7 @@ struct ConsoleView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.textSecondary)
+                .accessibilityLabel("Clear Console")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
@@ -287,19 +312,22 @@ struct ConsoleView: View {
             
             ScrollViewReader { proxy in
                 ScrollView {
-                    Text(portsManager.consoleOutput)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(Color.textPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                        .padding(12)
-                        .id("console-bottom")
+                    VStack(spacing: 0) {
+                        Text(portsManager.consoleOutput)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(Color.textPrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .padding(12)
+                        
+                        Color.clear
+                            .frame(height: 1)
+                            .id("console-bottom")
+                    }
                 }
                 .background(Color.surfaceElevated)
                 .onChange(of: portsManager.consoleOutput) { _, _ in
-                    withAnimation {
-                        proxy.scrollTo("console-bottom", anchor: .bottom)
-                    }
+                    proxy.scrollTo("console-bottom", anchor: .bottom)
                 }
             }
         }
