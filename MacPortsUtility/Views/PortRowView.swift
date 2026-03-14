@@ -24,6 +24,7 @@ struct PortRowView: View {
                         .foregroundStyle(isSelected ? Color.brandPrimary : Color.surfaceTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(isSelected ? "Deselect \(port.name)" : "Select \(port.name)")
             }
             
             // Port icon

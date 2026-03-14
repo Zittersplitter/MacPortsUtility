@@ -157,6 +157,7 @@ struct PortDetailView: View {
                                 }
                                 .buttonStyle(.themeAccent)
                                 .disabled(portsManager.state.isLoading)
+                                .accessibilityLabel("Update \(port.name)")
                             }
                             
                             Button {
@@ -169,6 +170,7 @@ struct PortDetailView: View {
                             }
                             .buttonStyle(.themeSecondary)
                             .disabled(portsManager.state.isLoading)
+                            .accessibilityLabel("Uninstall \(port.name)")
                         } else {
                             Button {
                                 Task {
@@ -180,6 +182,7 @@ struct PortDetailView: View {
                             }
                             .buttonStyle(.themePrimary)
                             .disabled(portsManager.state.isLoading)
+                            .accessibilityLabel("Install \(port.name)")
                         }
                     }
                 }

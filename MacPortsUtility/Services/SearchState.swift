@@ -11,6 +11,10 @@ class SearchState: ObservableObject {
     @Published var selectedPort: Port?
     @Published var isSearching: Bool = false
     @Published var errorMessage: String?
+    @Published var selectedCategory: PortCategory = .all
+    
+    /// All results fetched from the port command (before text filtering)
+    private var allFetchedResults: [Port] = []
     
     private weak var portsManager: PortsManager?
     
@@ -24,9 +28,49 @@ class SearchState: ObservableObject {
     
     // MARK: - Search
     
+    /// Called when category changes — fetches all ports for that category
+    func onCategoryChanged() async {
+        guard let portsManager = portsManager else { return }
+        
+        if selectedCategory == .all {
+            // "All" with no text → clear; with text → name search
+            if searchText.isEmpty {
+                allFetchedResults = []
+                searchResults = []
+                return
+            } else {
+                await performSearch()
+                return
+            }
+        }
+        
+        isSearching = true
+        errorMessage = nil
+        
+        let results = await portsManager.searchPortsByCategory(selectedCategory.rawValue)
+        allFetchedResults = results
+        applyTextFilter()
+        isSearching = false
+    }
+    
+    /// Called when the user submits a search or text changes
     func performSearch() async {
         guard let portsManager = portsManager else { return }
+        
+        if selectedCategory != .all {
+            // Category is active — filter already-fetched category results client-side
+            // If category results haven't been loaded yet, load them first
+            if allFetchedResults.isEmpty {
+                await onCategoryChanged()
+            } else {
+                applyTextFilter()
+            }
+            return
+        }
+        
+        // "All Categories" mode — search by name via port command
         guard !searchText.isEmpty else {
+            allFetchedResults = []
             searchResults = []
             return
         }
@@ -34,12 +78,36 @@ class SearchState: ObservableObject {
         isSearching = true
         errorMessage = nil
         
-        // Perform the search and get results locally
         let results = await portsManager.searchPortsReturningResults(query: searchText)
-        
-        // Update local state with the results
+        allFetchedResults = results
         searchResults = results
         isSearching = false
+    }
+    
+    /// Called as the user types — live filtering
+    func onSearchTextChanged() async {
+        if selectedCategory != .all {
+            // Category active: filter fetched results client-side
+            applyTextFilter()
+        } else {
+            // All categories: only show results if user has searched
+            // Don't re-fetch on every keystroke in "All" mode
+            if searchText.isEmpty {
+                allFetchedResults = []
+                searchResults = []
+            }
+        }
+    }
+    
+    private func applyTextFilter() {
+        if searchText.isEmpty {
+            searchResults = allFetchedResults
+        } else {
+            let query = searchText.lowercased()
+            searchResults = allFetchedResults.filter { port in
+                port.name.lowercased().hasPrefix(query)
+            }
+        }
     }
     
     // MARK: - Selection Management

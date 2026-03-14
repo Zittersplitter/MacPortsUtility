@@ -79,6 +79,7 @@ struct InstalledView: View {
                         }
                         .buttonStyle(.themeSecondary)
                         .disabled(portsManager.state.isLoading)
+                        .accessibilityLabel("Refresh installed ports list")
                     }
                     .padding(16)
                     .background(LinearGradient.toolbarGradient)
