@@ -13,31 +13,31 @@ A native macOS application for managing [MacPorts](https://www.macports.org/) pa
 ## Features
 
 ### Search & Discover
-- **Real-time Search** — find ports by name with instant results
-- **Category Filtering** — browse 15 categories (devel, net, python, ruby, databases, security, and more) from a dedicated dropdown
-- **Rich Port Details** — view version, categories, description, and full port info loaded automatically
-- **Drag & Drop** — drag port names from search results
+- **Real-time Search** find ports by name with instant results
+- **Category Filtering** browse 15 categories (devel, net, python, ruby, databases, security, and more) from a dedicated dropdown
+- **Rich Port Details** view version, categories, description, and full port info loaded automatically
+- **Drag & Drop** drag port names from search results
 
 ### Package Management
-- **One-click Install** — install ports with a single admin authentication prompt
-- **Install Queue** — select multiple ports across searches and install them all at once with drag-to-reorder support
-- **Uninstall** — remove individual ports or batch-uninstall selected ones
-- **Installed Ports Browser** — filter by name, sort by name or version, see update badges at a glance
+- **One-click Install** install ports with a single admin authentication prompt
+- **Install Queue** select multiple ports across searches and install them all at once with drag-to-reorder support
+- **Uninstall** remove individual ports or batch-uninstall selected ones
+- **Installed Ports Browser** filter by name, sort by name or version, see update badges at a glance
 
 ### Updates
-- **Outdated Port Detection** — see which ports have newer versions available
-- **Selective Updates** — update individual ports or a batch selection
-- **Update All** — one-click update for every outdated port
-- **Visual Badges** — sidebar and list badges show the number of available updates
+- **Outdated Port Detection** see which ports have newer versions available
+- **Selective Updates** update individual ports or a batch selection
+- **Update All** one-click update for every outdated port
+- **Visual Badges** sidebar and list badges show the number of available updates
 
 ### User Experience
-- **Native macOS Design** — built with SwiftUI using a three-column `NavigationSplitView`
-- **Platinum Grey Light Mode** — warm grey surfaces inspired by classic Mac aesthetics
-- **Dark Mode** — full dark-mode support with automatic or manual switching (System / Light / Dark)
-- **Built-in Console** — toggleable panel showing live operation output (capped at 50 KB)
-- **Status Bar** — persistent indicator of the current operation state
-- **Keyboard Shortcuts** — common actions accessible from the menu bar
-- **Caching** — search results, category listings, and port info are cached with a 5-minute TTL; caches auto-invalidate after installs, uninstalls, updates, or syncs
+- **Native macOS Design** built with SwiftUI using a three-column `NavigationSplitView`
+- **Platinum Grey Light Mode** warm grey surfaces inspired by classic Mac aesthetics
+- **Dark Mode** full dark-mode support with automatic or manual switching (System / Light / Dark)
+- **Built-in Console** toggleable panel showing live operation output (capped at 50 KB)
+- **Status Bar** persistent indicator of the current operation state
+- **Keyboard Shortcuts** common actions accessible from the menu bar
+- **Caching** search results, category listings, and port info are cached with a 5-minute TTL; caches auto-invalidate after installs, uninstalls, updates, or syncs
 
 ## Requirements
 
