@@ -26,6 +26,33 @@ class PortsManager: ObservableObject {
     private static let installQueueKey = "persistedInstallQueue"
     private static let maxConsoleLength = 50_000
     
+    // Cached regex for parsing
+    private static let searchResultRegex = try! NSRegularExpression(pattern: #"^([a-zA-Z0-9._+\-]+)\s+@(\S+)\s+\(([^)]+)\)(?:\s+(.+))?$"#, options: [])
+    private static let installedPortRegex = try! NSRegularExpression(pattern: #"^(\S+)\s+@(\S+)"#, options: [])
+    
+    // MARK: - Cache
+    
+    private struct CacheEntry<T> {
+        let value: T
+        let timestamp: Date
+        func isValid(ttl: TimeInterval) -> Bool { Date().timeIntervalSince(timestamp) < ttl }
+    }
+    
+    /// TTL for cached data (5 minutes)
+    private static let cacheTTL: TimeInterval = 300
+    
+    private var searchCache: [String: CacheEntry<[Port]>] = [:]
+    private var categoryCache: [String: CacheEntry<[Port]>] = [:]
+    private var portInfoCache: [String: CacheEntry<String>] = [:]
+    
+    /// Invalidate all caches (after install/uninstall/update/sync)
+    func invalidateCache() {
+        searchCache.removeAll()
+        categoryCache.removeAll()
+        portInfoCache.removeAll()
+        appendToConsole("Cache cleared")
+    }
+    
     /// Validates that a port name contains only safe characters (alphanumeric, dot, hyphen, underscore, plus)
     private static func isValidPortName(_ name: String) -> Bool {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "._-+"))
@@ -34,8 +61,10 @@ class PortsManager: ObservableObject {
     
     /// Escapes a string for safe use inside an AppleScript double-quoted string
     private func shellQuoted(_ value: String) -> String {
-        let escaped = value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
-        return escaped
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "'", with: "'\\''")
     }
     
     init() {
@@ -117,6 +146,12 @@ class PortsManager: ObservableObject {
     
     /// Search all ports in a given category
     func searchPortsByCategory(_ category: String) async -> [Port] {
+        // Check cache first
+        if let cached = categoryCache[category], cached.isValid(ttl: Self.cacheTTL) {
+            appendToConsole("Using cached results for category '\(category)' (\(cached.value.count) ports)")
+            return enrichWithInstalledStatus(cached.value)
+        }
+        
         appendToConsole("Loading ports in category '\(category)'...")
         
         let (output, error) = await runCommand([portCommand, "search", "--category", "--glob", category])
@@ -135,15 +170,13 @@ class PortsManager: ObservableObject {
             }
         }
         
-        let installedNames = Set(installedPorts.map { $0.name })
-        ports = ports.map { port in
-            var p = port
-            p.isInstalled = installedNames.contains(port.name)
-            return p
-        }
+        // Cache raw results (without installed status, so it stays reusable)
+        categoryCache[category] = CacheEntry(value: ports, timestamp: Date())
         
-        appendToConsole("Found \(ports.count) ports in category '\(category)'")
-        return ports
+        let enriched = enrichWithInstalledStatus(ports)
+        
+        appendToConsole("Found \(enriched.count) ports in category '\(category)'")
+        return enriched
     }
     
     /// Search ports and return results (for per-window state)
@@ -153,10 +186,24 @@ class PortsManager: ObservableObject {
             return []
         }
         
+        let cacheKey = query.lowercased()
+        
+        // Check cache first
+        if let cached = searchCache[cacheKey], cached.isValid(ttl: Self.cacheTTL) {
+            appendToConsole("Using cached results for '\(query)' (\(cached.value.count) ports)")
+            return enrichWithInstalledStatus(cached.value)
+        }
+        
         appendToConsole("Searching for '\(query)'...")
         
         // Search for ports matching the query
-        let (output, error) = await runCommand([portCommand, "search", "--name", "--glob", "*\(query)*"])
+        // Escape glob metacharacters in user input
+        let safeQuery = query
+            .replacingOccurrences(of: "*", with: "[*]")
+            .replacingOccurrences(of: "?", with: "[?]")
+            .replacingOccurrences(of: "[", with: "[[]")
+            .replacingOccurrences(of: "]", with: "[]]")
+        let (output, error) = await runCommand([portCommand, "search", "--name", "--glob", "*\(safeQuery)*"])
         
         if !error.isEmpty && !error.contains("Warning") {
             appendToConsole("Error: \(error)")
@@ -172,16 +219,24 @@ class PortsManager: ObservableObject {
             }
         }
         
+        // Cache raw results
+        searchCache[cacheKey] = CacheEntry(value: ports, timestamp: Date())
+        
         // Check which ones are installed
+        let enriched = enrichWithInstalledStatus(ports)
+        
+        appendToConsole("Found \(enriched.count) ports matching '\(query)'")
+        return enriched
+    }
+    
+    /// Enrich ports with current installed status
+    private func enrichWithInstalledStatus(_ ports: [Port]) -> [Port] {
         let installedNames = Set(installedPorts.map { $0.name })
-        ports = ports.map { port in
+        return ports.map { port in
             var p = port
             p.isInstalled = installedNames.contains(port.name)
             return p
         }
-        
-        appendToConsole("Found \(ports.count) ports matching '\(query)'")
-        return ports
     }
     
     private func parseSearchResult(_ line: String) -> Port? {
@@ -192,9 +247,7 @@ class PortsManager: ObservableObject {
         
         // Match pattern: name @version (categories)
         // Name restricted to safe characters: alphanumeric, dot, hyphen, underscore, plus
-        let pattern = #"^([a-zA-Z0-9._+\-]+)\s+@(\S+)\s+\(([^)]+)\)(?:\s+(.+))?$"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
-              let match = regex.firstMatch(in: trimmed, options: [], range: NSRange(trimmed.startIndex..., in: trimmed)) else {
+        guard let match = Self.searchResultRegex.firstMatch(in: trimmed, options: [], range: NSRange(trimmed.startIndex..., in: trimmed)) else {
             return nil
         }
         
@@ -242,8 +295,10 @@ class PortsManager: ObservableObject {
         installedPorts = ports
         appendToConsole("Found \(ports.count) installed ports")
         
-        // Also check for updates
-        await checkForUpdates()
+        // Only check for updates if no other operation is in progress
+        if !state.isLoading {
+            await checkForUpdates()
+        }
     }
     
     private func parseInstalledPort(_ line: String) -> Port? {
@@ -251,9 +306,7 @@ class PortsManager: ObservableObject {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty, !trimmed.hasPrefix("The following") else { return nil }
         
-        let pattern = #"^(\S+)\s+@(\S+)"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
-              let match = regex.firstMatch(in: trimmed, options: [], range: NSRange(trimmed.startIndex..., in: trimmed)) else {
+        guard let match = Self.installedPortRegex.firstMatch(in: trimmed, options: [], range: NSRange(trimmed.startIndex..., in: trimmed)) else {
             return nil
         }
         
@@ -298,14 +351,21 @@ class PortsManager: ObservableObject {
     private func parseOutdatedPort(_ line: String) -> Port? {
         // Format: "portname                       currentversion < newversion"
         let trimmed = line.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, !trimmed.hasPrefix("No") else { return nil }
+        guard !trimmed.isEmpty,
+              !trimmed.hasPrefix("No"),
+              !trimmed.hasPrefix("The following") else { return nil }
         
         let components = trimmed.split(separator: " ").map { String($0) }
-        guard components.count >= 3 else { return nil }
+        // Expect: name currentVersion < newVersion
+        guard components.count >= 4,
+              components.contains("<") else { return nil }
         
         let name = components[0]
         let currentVersion = components[1]
-        let newVersion = components.last ?? ""
+        // newVersion is the component after "<"
+        guard let arrowIndex = components.firstIndex(of: "<"),
+              arrowIndex + 1 < components.count else { return nil }
+        let newVersion = components[arrowIndex + 1]
         
         return Port(
             name: name,
@@ -358,9 +418,8 @@ class PortsManager: ObservableObject {
         }
         
         // Refresh to detect partial success
+        invalidateCache()
         await refreshInstalledPorts()
-        
-        // Report partial failures
         let installedNames = Set(installedPorts.map { $0.name })
         let failedNames = portNames.filter { !installedNames.contains($0) }
         if !failedNames.isEmpty && error.isEmpty {
@@ -414,6 +473,7 @@ class PortsManager: ObservableObject {
         }
         
         // Refresh to detect partial success
+        invalidateCache()
         await refreshInstalledPorts()
         
         let installedNames = Set(installedPorts.map { $0.name })
@@ -468,6 +528,7 @@ class PortsManager: ObservableObject {
             state = .idle
         }
         
+        invalidateCache()
         await refreshInstalledPorts()
     }
     
@@ -500,6 +561,7 @@ class PortsManager: ObservableObject {
             state = .idle
         }
         
+        invalidateCache()
         await refreshInstalledPorts()
     }
     
@@ -530,6 +592,7 @@ class PortsManager: ObservableObject {
             state = .idle
         }
         
+        invalidateCache()
         await checkForUpdates()
     }
     
@@ -540,7 +603,14 @@ class PortsManager: ObservableObject {
             appendToConsole("Rejected port info request — invalid port name: \(name)")
             return ""
         }
+        
+        // Check cache first
+        if let cached = portInfoCache[name], cached.isValid(ttl: Self.cacheTTL) {
+            return cached.value
+        }
+        
         let (output, _) = await runCommand([portCommand, "info", name])
+        portInfoCache[name] = CacheEntry(value: output, timestamp: Date())
         return output
     }
     

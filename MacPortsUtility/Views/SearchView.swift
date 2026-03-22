@@ -152,59 +152,60 @@ struct SearchBarView: View {
     var onSearch: () -> Void
     
     var body: some View {
-        HStack(spacing: 12) {
+        VStack(spacing: 8) {
+            // Category picker row
             HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(Color.textSecondary)
-                
-                TextField("Search ports...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.body)
-                    .onSubmit {
-                        onSearch()
+                Picker(selection: $selectedCategory) {
+                    ForEach(PortCategory.allCases) { category in
+                        Label(category.displayName, systemImage: category.icon)
+                            .tag(category)
                     }
+                } label: {
+                    Label("Category", systemImage: "folder")
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .pickerStyle(.menu)
                 
-                if !searchText.isEmpty {
-                    Button {
-                        searchText = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(Color.textTertiary)
+                Spacer()
+            }
+            
+            // Search field + button row
+            HStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(Color.textSecondary)
+                    
+                    TextField("Search ports...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.body)
+                        .onSubmit {
+                            onSearch()
+                        }
+                    
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(Color.textTertiary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
-            }
-            .padding(10)
-            .background(Color.surfaceElevated)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.surfaceSecondary, lineWidth: 1)
-            )
-            
-            Picker(selection: $selectedCategory) {
-                ForEach(PortCategory.allCases) { category in
-                    Label(category.displayName, systemImage: category.icon)
-                        .tag(category)
+                .padding(10)
+                .background(Color.surfaceElevated)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.surfaceSecondary, lineWidth: 1)
+                )
+                
+                Button("Search") {
+                    onSearch()
                 }
-            } label: {
-                EmptyView()
+                .buttonStyle(.themePrimary)
+                .disabled(searchText.isEmpty)
             }
-            .pickerStyle(.menu)
-            .frame(width: 170)
-            .padding(6)
-            .background(Color.surfaceElevated)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.surfaceSecondary, lineWidth: 1)
-            )
-            
-            Button("Search") {
-                onSearch()
-            }
-            .buttonStyle(.themePrimary)
-            .disabled(searchText.isEmpty)
         }
         .padding(16)
         .background(LinearGradient.toolbarGradient)

@@ -105,7 +105,7 @@ class SearchState: ObservableObject {
         } else {
             let query = searchText.lowercased()
             searchResults = allFetchedResults.filter { port in
-                port.name.lowercased().hasPrefix(query)
+                port.name.lowercased().contains(query)
             }
         }
     }

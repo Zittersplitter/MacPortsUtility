@@ -113,11 +113,13 @@ struct PortDetailView: View {
                         }
                     }
                     
-                    if portInfo.isEmpty {
-                        Button("Load Details") {
-                            loadPortInfo()
-                        }
-                        .buttonStyle(.themeSecondary)
+                    if portInfo.isEmpty && !isLoadingInfo {
+                        Text("No information available")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.textTertiary)
+                    } else if portInfo.isEmpty {
+                        ProgressView("Loading details...")
+                            .font(.subheadline)
                     } else {
                         Text(portInfo)
                             .font(.system(.caption, design: .monospaced))
@@ -194,8 +196,11 @@ struct PortDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.surfacePrimary)
-        .onChange(of: port.id) { _, _ in
+        .onChange(of: port) { _, _ in
             portInfo = ""
+        }
+        .task(id: port.name) {
+            loadPortInfo()
         }
     }
     
@@ -249,7 +254,7 @@ struct FlowLayout: Layout {
                 lineHeight = max(lineHeight, size.height)
                 currentX += size.width + spacing
                 
-                self.size.width = max(self.size.width, currentX)
+                self.size.width = max(self.size.width, currentX - spacing)
             }
             
             self.size.height = currentY + lineHeight

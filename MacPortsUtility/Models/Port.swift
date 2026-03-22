@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a MacPorts port
-struct Port: Identifiable, Hashable {
+struct Port: Identifiable, Hashable, Equatable {
     let id: String
     let name: String
     let version: String
@@ -33,13 +33,7 @@ struct Port: Identifiable, Hashable {
         self.isSelected = isSelected
     }
     
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-    
-    static func == (lhs: Port, rhs: Port) -> Bool {
-        lhs.id == rhs.id
-    }
+
 }
 
 /// Represents the state of a port operation
@@ -133,7 +127,7 @@ enum PortCategory: String, CaseIterable, Identifiable {
         case .net: return "network"
         case .python: return "chevron.left.forwardslash.chevron.right"
         case .ruby: return "diamond"
-        case .perl: return "camel"
+        case .perl: return "p.circle.fill"
         case .java: return "cup.and.saucer"
         case .databases: return "cylinder"
         case .www: return "globe"

@@ -1,8 +1,7 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Sun Microsystems–Inspired Color Palette (Late 2000s Enterprise)
-// Now with dark mode support
+// MARK: - Platinum Grey Color Palette (light mode) + Dark mode support
 
 extension Color {
     
@@ -20,34 +19,34 @@ extension Color {
     /// Soft amber for secondary accents - #F2A65A
     static let brandAmber = Color(hex: 0xF2A65A)
     
-    // MARK: - Background Colors (adaptive)
+    // MARK: - Background Colors (adaptive — Platinum grey in light mode)
     
-    /// Primary background - off-white in light, dark gray in dark
+    /// Primary background - Platinum grey in light, dark gray in dark
     static let surfacePrimary = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 1.0)
-            : NSColor(red: 0.957, green: 0.965, blue: 0.973, alpha: 1.0)
+            : NSColor(red: 0.867, green: 0.867, blue: 0.867, alpha: 1.0)  // #DDDDDD
     })
     
-    /// Secondary background - light gray / darker gray
+    /// Secondary background - darker Platinum / darker gray
     static let surfaceSecondary = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.18, green: 0.18, blue: 0.20, alpha: 1.0)
-            : NSColor(red: 0.851, green: 0.871, blue: 0.894, alpha: 1.0)
+            : NSColor(red: 0.780, green: 0.780, blue: 0.796, alpha: 1.0)  // #C7C7CB
     })
     
     /// Card/panel background - elevated surface
     static let surfaceElevated = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.15, green: 0.15, blue: 0.16, alpha: 1.0)
-            : NSColor.white
+            : NSColor(red: 0.933, green: 0.933, blue: 0.933, alpha: 1.0)  // #EEEEEE
     })
     
     /// Medium gray for borders and dividers
     static let surfaceTertiary = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.35, green: 0.35, blue: 0.38, alpha: 1.0)
-            : NSColor(red: 0.604, green: 0.643, blue: 0.686, alpha: 1.0)
+            : NSColor(red: 0.604, green: 0.604, blue: 0.624, alpha: 1.0)  // #9A9A9F
     })
     
     // MARK: - Text Colors (adaptive)
@@ -56,21 +55,21 @@ extension Color {
     static let textPrimary = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.93, green: 0.93, blue: 0.94, alpha: 1.0)
-            : NSColor(red: 0.227, green: 0.247, blue: 0.271, alpha: 1.0)
+            : NSColor(red: 0.173, green: 0.173, blue: 0.200, alpha: 1.0)
     })
     
     /// Secondary text - medium gray
     static let textSecondary = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.68, green: 0.68, blue: 0.70, alpha: 1.0)
-            : NSColor(red: 0.361, green: 0.400, blue: 0.439, alpha: 1.0)
+            : NSColor(red: 0.361, green: 0.361, blue: 0.400, alpha: 1.0)
     })
     
     /// Tertiary/disabled text
     static let textTertiary = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(red: 0.50, green: 0.50, blue: 0.53, alpha: 1.0)
-            : NSColor(red: 0.604, green: 0.643, blue: 0.686, alpha: 1.0)
+            : NSColor(red: 0.604, green: 0.604, blue: 0.643, alpha: 1.0)
     })
     
     /// Text on primary brand color
@@ -110,7 +109,7 @@ extension Color {
 
 extension LinearGradient {
     
-    /// Primary brand gradient (light blue → primary blue)
+    /// Primary brand gradient
     static let brandGradient = LinearGradient(
         colors: [Color.brandLight, Color.brandPrimary],
         startPoint: .topLeading,
@@ -131,7 +130,7 @@ extension LinearGradient {
         endPoint: .bottomTrailing
     )
     
-    /// Toolbar/header gradient - subtle enterprise feel (uses adaptive surfacePrimary)
+    /// Toolbar/header gradient
     static let toolbarGradient = LinearGradient(
         colors: [
             Color.surfacePrimary,

@@ -1,40 +1,43 @@
 # MacPorts Utility
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-macOS-blue" alt="Platform: macOS">
+  <img src="https://img.shields.io/badge/Platform-macOS_14+-blue" alt="Platform: macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9+-orange" alt="Swift 5.9+">
   <img src="https://img.shields.io/badge/SwiftUI-Native-green" alt="SwiftUI">
 </p>
 
-A native macOS application for managing [MacPorts](https://www.macports.org/) packages with a beautiful, modern interface. Search, install, update, and manage your ports without touching the command line.
+A native macOS application for managing [MacPorts](https://www.macports.org/) packages with a modern, Platinum-grey–tinted interface. Search, install, update, and manage your ports without touching the command line.
 
 ![MacPorts Utility Screenshot](screenshot.png)
 
 ## Features
 
 ### Search & Discover
-- **Powerful Search**: Find ports by name with real-time search
-- **Rich Port Details**: View version, categories, and descriptions
-- **Detailed Information**: Load comprehensive port info directly from MacPorts
+- **Real-time Search** — find ports by name with instant results
+- **Category Filtering** — browse 15 categories (devel, net, python, ruby, databases, security, and more) from a dedicated dropdown
+- **Rich Port Details** — view version, categories, description, and full port info loaded automatically
+- **Drag & Drop** — drag port names from search results
 
 ### Package Management
-- **Install Ports**: One-click installation with admin authentication
-- **Batch Operations**: Select and install multiple ports at once with a single password prompt
-- **Uninstall Ports**: Easily remove packages you no longer need
-- **View Installed**: Browse all your installed ports with filtering and sorting
+- **One-click Install** — install ports with a single admin authentication prompt
+- **Install Queue** — select multiple ports across searches and install them all at once with drag-to-reorder support
+- **Uninstall** — remove individual ports or batch-uninstall selected ones
+- **Installed Ports Browser** — filter by name, sort by name or version, see update badges at a glance
 
 ### Updates
-- **Check for Updates**: See which ports have newer versions available
-- **Update Individual Ports**: Update specific ports as needed
-- **Update All**: One-click update for all outdated ports
-- **Update Badges**: Visual indicators show which ports need attention
+- **Outdated Port Detection** — see which ports have newer versions available
+- **Selective Updates** — update individual ports or a batch selection
+- **Update All** — one-click update for every outdated port
+- **Visual Badges** — sidebar and list badges show the number of available updates
 
 ### User Experience
-- **Native macOS Design**: Built with SwiftUI for a truly native look and feel
-- **Dark Mode Support**: Full light and dark mode support with automatic switching
-- **Keyboard Shortcuts**: Quick actions via menu shortcuts
-- **Built-in Console**: Monitor operation progress and output in real-time
-- **Status Bar**: Always see the current operation status
+- **Native macOS Design** — built with SwiftUI using a three-column `NavigationSplitView`
+- **Platinum Grey Light Mode** — warm grey surfaces inspired by classic Mac aesthetics
+- **Dark Mode** — full dark-mode support with automatic or manual switching (System / Light / Dark)
+- **Built-in Console** — toggleable panel showing live operation output (capped at 50 KB)
+- **Status Bar** — persistent indicator of the current operation state
+- **Keyboard Shortcuts** — common actions accessible from the menu bar
+- **Caching** — search results, category listings, and port info are cached with a 5-minute TTL; caches auto-invalidate after installs, uninstalls, updates, or syncs
 
 ## Requirements
 
@@ -52,36 +55,37 @@ A native macOS application for managing [MacPorts](https://www.macports.org/) pa
    cd MacPortsUtility
    ```
 
-2. Open the project in Xcode:
+2. Open in Xcode and build:
    ```bash
    open MacPortsUtility.xcodeproj
    ```
 
-3. Build and run (⌘R)
+3. Press **⌘R** to build and run.
 
-### Prerequisites
-
-Make sure MacPorts is installed on your system. If not, the app will prompt you to download it from the official website.
+If MacPorts is not installed, the app displays an overlay with a link to the official download page.
 
 ## Architecture
 
 ```
 MacPortsUtility/
-├── MacPortsUtilityApp.swift    # App entry point & menu commands
-├── ContentView.swift           # Main navigation structure
+├── MacPortsUtilityApp.swift    # App entry point, AppearanceMode enum, menu commands
+├── ContentView.swift           # Three-column NavigationSplitView, console, status bar
+├── AppIconView.swift           # Custom app-icon view
 ├── Models/
-│   └── Port.swift              # Port model & enums
+│   └── Port.swift              # Port model, PortCategory, PortOperationState enums
 ├── Services/
-│   └── PortsManager.swift      # Core MacPorts operations
+│   ├── PortsManager.swift      # Core service — search, install, update, cache, shell execution
+│   └── SearchState.swift       # Per-window search state with client-side category filtering
 ├── Views/
-│   ├── SearchView.swift        # Search interface
-│   ├── InstalledView.swift     # Installed ports list
-│   ├── UpdatesView.swift       # Updates management
-│   ├── PortDetailView.swift    # Port details panel
-│   └── PortRowView.swift       # Port list item component
+│   ├── SearchView.swift        # Search interface with category dropdown & install queue
+│   ├── InstalledView.swift     # Installed ports list with filter, sort, multi-select
+│   ├── UpdatesView.swift       # Outdated ports list with batch & individual updates
+│   ├── PortDetailView.swift    # Port info panel with auto-loaded details
+│   ├── PortRowView.swift       # Reusable port list-row component
+│   └── AboutView.swift         # About dialog with version & author info
 ├── Theme/
-│   └── AppTheme.swift          # Colors, gradients & styles
-└── Assets.xcassets/            # App icons & colors
+│   └── AppTheme.swift          # Design system — colours, gradients, button styles, card modifier
+└── Assets.xcassets/            # App icons & accent colour
 ```
 
 ## Keyboard Shortcuts
@@ -89,14 +93,14 @@ MacPortsUtility/
 | Shortcut | Action |
 |----------|--------|
 | `⌘R` | Refresh installed ports |
-| `⇧⌘S` | Sync port tree (selfupdate) |
+| `⇧⌘S` | Sync port tree (`port selfupdate`) |
 | `⇧⌘I` | Open MacPorts download page |
 
 ## How It Works
 
-MacPorts Utility interfaces with the `port` command-line tool installed at `/opt/local/bin/port`. The app executes MacPorts commands and parses their output to provide a graphical interface.
+MacPorts Utility wraps the `port` CLI at `/opt/local/bin/port`. It parses command output with compiled regular expressions to populate the UI.
 
-For operations requiring administrator privileges (install, uninstall, update, sync), the app uses AppleScript to prompt for admin credentials, ensuring a single password prompt for batch operations.
+Privileged operations (install, uninstall, update, sync) use **AppleScript** to request admin credentials via the system dialog, consolidating batch operations into a single password prompt. Port names are validated and shell-quoted before execution to prevent injection.
 
 ### Key Operations
 

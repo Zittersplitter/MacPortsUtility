@@ -23,7 +23,7 @@ struct InstalledView: View {
         case .name:
             ports.sort { $0.name < $1.name }
         case .version:
-            ports.sort { $0.version > $1.version }
+            ports.sort { $0.version.compare($1.version, options: .numeric) == .orderedDescending }
         }
         
         return ports
